@@ -51,5 +51,5 @@ cp -vrf ~/applications/scripts/* $scriptBackupDir/
 tar cf /tmp/apt-sources.tar /etc/apt/sources.list.d --checkpoint
 mv -vf /tmp/apt-sources.tar $zipBackupDir/
 #emesene
-#tar cf /tmp/emesene.tar ~/.config/emesene1.0/ --checkpoint --exclude *cache*
+#tar cf /tmp/emesene.tar ~/.config/ --checkpoint --exclude *cache*
 #mv -vf /tmp/emesene.tar $zipBackupDir/
