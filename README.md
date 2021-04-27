@@ -1,1 +1,1 @@
-# various Scripts in bash 
+# Various Scripts in bash & powershell 
