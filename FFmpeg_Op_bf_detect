@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if [ -d "$1" ]; then
+  echo "$1:"
+  files=$(find -E "$1" -maxdepth 2 -type f -regex '.*(.webm)$')
+else
+  files="$(ls "$@" | awk '/.webm$/ { print $0 }')"
+fi
+for file in $files; do
+  temp_file="$(mktemp)"
+  temp1_file="$(mktemp)"
+  base="$(basename "$file")"
+  dir="$(dirname "$file")"
+  dir=$(basename "$dir")
+  #echo "${dir}/${base}:"
+
+  ffprobe -v error -i "$file" -show_entries stream=width,height,bit_rate,duration -of default=noprint_wrappers=1 > $temp_file
+  width="$(awk '/width=/ { print $1 }' "$temp_file"| cut -f2 -d"=" )"
+  height="$(awk '/height=/ { print $1 }' "$temp_file"| cut -f2 -d"=" )"
+  xposition=$((width / 2))
+  yposition=$((height * 10/100))
+
+  ffmpeg -hide_banner -i "$file" -vf "select='not(mod(n\,500))',crop=200:200:$xposition:$yposition,blackframe=98:32" -f null - 2>> $temp_file
+  cl_framedetect="$(awk '/pblack:/ { print $5, $6 }' "$temp_file")"
+
+
+  clBF="$(awk '/pblack:/ { print $6 }' "$temp_file" |wc -l)"
+  clmaxBF="$(awk '/pblack:/ { print $5 }' "$temp_file" |cut -f2 -d":" | sort -n | tail -1)"
+
+	if [ -n "$cl_framedetect" ] && [ "$clBF" -gt 2 ]; then
+		echo "${dir}/${base}:  Detected  $clBF black screen frame on Operator"
+		echo "$base" >> ./videoListBlack
+	else
+		if [ -n "$cl_framedetect" ] && [ "$clBF" -lt 3 ]; then
+		echo "${dir}/${base}:  Detected  $clBF black screen frame is going in ok list"
+		echo "$base" >> ./VideoOk
+
+			else
+
+                                echo "NO BLACK FRAME DETECTED ${dir}/${base}: Video is OK  "
+                                echo "$base" >> ./videoOk
+                                fi
+	fi
+
+rm "$temp_file"
+rm "$temp1_file"
+done
