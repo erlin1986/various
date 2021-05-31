@@ -1,5 +1,15 @@
 #!/bin/bash
 
+start=$(date +%s.%N)
+
+# HERE BE CODE
+
+end=$(date +%s.%N)    
+runtime=$(python -c "print(${end} - ${start})")
+
+echo "Runtime was $runtime"
+
+
 if [ -d "$1" ]; then
   echo "$1:"
   files=$(find -E "$1" -maxdepth 2 -type f -regex '.*(.webm)$')
@@ -41,7 +51,7 @@ for file in $files; do
                                 echo "$base" >> ./videoOk
                                 fi
 	fi
-
+echo "Runtime was $runtime" >> ./videoOk
 rm "$temp_file"
 rm "$temp1_file"
 done
