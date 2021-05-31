@@ -4,10 +4,9 @@ start=$(date +%s.%N)
 
 # HERE BE CODE
 
-end=$(date +%s.%N)    
-runtime=$(python -c "print(${end} - ${start})")
 
-echo "Runtime was $runtime"
+
+echo "FFMPEG black screen video detection Script has started on $start"
 
 
 if [ -d "$1" ]; then
@@ -51,6 +50,8 @@ for file in $files; do
                                 echo "$base" >> ./videoOk
                                 fi
 	fi
+end=$(date +%s.%N)    
+runtime=$(python -c "print(${end} - ${start})")
 echo "Runtime was $runtime" >> ./videoOk
 rm "$temp_file"
 rm "$temp1_file"
