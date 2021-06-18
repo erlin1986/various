@@ -2,7 +2,7 @@
 
 start=$(date +%s.%N)
 
-# HERE BE CODE
+# HERE the CODE
 
 
 
@@ -37,11 +37,11 @@ for file in $files; do
   clmaxBF="$(awk '/pblack:/ { print $5 }' "$temp_file" |cut -f2 -d":" | sort -n | tail -1)"
 
 	if [ -n "$cl_framedetect" ] && [ "$clBF" -gt 2 ]; then
-		echo "${dir}/${base}:  Detected  $clBF black screen frame on Operator"
+		echo "${dir}/${base}:  Detected  $clBF black screen frame on Client"
 		echo "$base" >> ./videoListBlack
 	else
 		if [ -n "$cl_framedetect" ] && [ "$clBF" -lt 3 ]; then
-		echo "${dir}/${base}:  Detected  $clBF black screen frame is going in ok list"
+		echo "${dir}/${base}:  Detected  $clBF black screen frame  going in ok list"
 		echo "$base" >> ./VideoOk
 
 			else
