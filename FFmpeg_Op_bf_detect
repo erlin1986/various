@@ -17,7 +17,6 @@ else
 fi
 for file in $files; do
   temp_file="$(mktemp)"
-  temp1_file="$(mktemp)"
   base="$(basename "$file")"
   dir="$(dirname "$file")"
   dir=$(basename "$dir")
@@ -52,7 +51,6 @@ for file in $files; do
 	fi
 end=$(date +%s.%N)    
 runtime=$(python -c "print(${end} - ${start})")
-echo "Runtime was $runtime" >> ./videoOk
+echo "Runtime of th script was $runtime" >> ./videoOk
 rm "$temp_file"
-rm "$temp1_file"
 done
