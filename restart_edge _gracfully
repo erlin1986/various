@@ -1,0 +1,29 @@
+$Process = "msedge"
+$edgeProc = Get-Process -Name $Process -ErrorAction SilentlyContinue
+
+if($edgeProc -ne $null){
+    # while loop makes sure all edge windows are closed
+    echo "Stopping edge..."
+    while($edgeProc.count -gt "0"){
+        ForEach ($Proc in Get-Process -Name $Process){$Proc.CloseMainWindow()}
+        sleep 5
+        If (Get-Process -Name $Process){
+            Write-Host "edge is Open.......Closing edge "$edgeProc.count""
+          
+           Stop-Process -name $Process
+           sleep 5
+          # Start-Process msedge -WindowStyle Normal 
+                  }
+       # get-process | where-object {$_.HasExited}
+        $edgeProc = $null
+    }
+} 
+else {
+   echo "No running edge process found"
+   Remove-Variable Process
+}
+
+
+$edgePath = "$($env:LOCALAPPDATA)\Packages\Microsoft.MicrosoftEdge_8wekyb3d8bbwe\AC\MicrosoftEdge\User\Default\Recovery\Active\"
+Get-Transaction -Name *
+shell:AppsFolder\Microsoft.MicrosoftEdge_8wekyb3d8bbwe!MicrosoftEdge -private
