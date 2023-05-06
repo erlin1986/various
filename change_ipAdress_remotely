@@ -1,0 +1,124 @@
+# Import network settings from CSV file'
+$networkSettingsTable = Import-Csv "C:\networksettings.csv"
+
+
+# Create an array to hold the status of each computer
+$computerStatus = @()
+
+# Loop through each network settings row and update IP configuration for corresponding computer
+foreach ($networkSettingsRow in $networkSettingsTable) {
+
+    # Extract computer name and network settings from current row
+    $computerName = $networkSettingsRow.ComputerName
+    $newIP = $networkSettingsRow.NewIP
+    $newGateway = $networkSettingsRow.NewGateway
+    $newPrefixLength = $networkSettingsRow.NewPrefixLength
+
+    # Check network connectivity with the computer
+    $pingResult = Test-Connection -ComputerName $computerName -Count 1 -ErrorAction SilentlyContinue
+
+    # If the computer is not reachable, add status to array and continue to next row
+    if ($pingResult.Status -ne "Success") {
+        $computerStatus += [PSCustomObject]@{
+            ComputerName = $computerName
+            Status = "Not reachable"
+        }
+        continue
+    }
+
+    # Get current network adapter configuration for the computer
+  
+   $currentIPConfig = Get-WmiObject Win32_NetworkAdapterConfiguration -ComputerName $computerName | Where-Object { ($_.IPEnabled -eq $true) -and ($_.DefaultIpGateway -ne $null) }  |  Select-Object -First 1
+   #$currentIPConfig = Get-NetIPAddress -CimSession $computerName | Where-Object {$_.AddressFamily -eq "IPv4" -and $_.PrefixOrigin -eq "Manual"} | Select-Object IPAddress, PrefixLength, DefaultGateway
+   $currentIP = $currentIPConfig.IPAddress[0]
+   $currentGateway = $currentIPConfig.DefaultIPGateway[0]
+   $currentPrefix = $currentIPConfig.IPSubnet[0].Split("/")[-1]
+
+
+        # Check if the current IP matches the new IP in the network settings table
+
+        if ($currentIP -eq $newIP) {
+            Write-Host "The IP on $($ComputerName) is already set to $($Newip)"
+            $results[$ComputerName] = "IP Already Set"
+            continue
+        }
+        
+        # Set the new IP on the remote computer
+        try {
+     
+     $session = New-PSSession -ComputerName $computername
+          
+     Invoke-Command  -ComputerName $computername -ScriptBlock {
+        
+                        param( $NewIP, $NewGateway, $NewPrefixLength)
+                        $adapterIndex =  (Get-NetAdapter | Where-Object {-not $_.Virtual -and $_.Status -eq 'up'}).ifIndex
+                       $adaptername = (Get-NetAdapter | Where-Object {-not $_.Virtual -and $_.Status -eq 'up'}).Name
+
+                        # Configure the new IP address
+                         New-NetIPAddress -InterfaceIndex $adapterIndex -IPAddress $newIP -PrefixLength $newPrefixLength -DefaultGateway $newGateway -Confirm:$false
+            
+                        Set-DnsClientServerAddress -InterfaceIndex $adapterIndex -ServerAddresses "8.8.8.8","8.8.4.4"
+
+                        ipconfig /flushdns
+                        ipconfig /registerdns
+
+                            # Set the new prefix length
+                            # Set-NetIPInterface -InterfaceIndex $netAdapter.InterfaceIndex -InterfaceMetric 1 -AddressFamily IPv4 -PrefixLength $NewPrefixLength
+
+                            # Restart the network adapter
+                        Restart-NetAdapter -Name $adaptername
+
+    } -ArgumentList  $NewIP, $NewGateway, $NewPrefixLength
+
+   # Disconnect from the remote session
+    Remove-PSSession $session
+
+
+
+              $computerStatus += [PSCustomObject]@{
+        ComputerName = $computerName
+        Status = "IP address changed"
+    }
+        }
+        catch {
+            Write-Host "Failed to set IP on $($ComputerName)"
+            $results[$ComputerName] = "IP Change Failed"
+            continue 
+        }
+    
+    else {
+        Write-Host "$($computer.ComputerName) is offline"
+         $computerStatus += [PSCustomObject]@{
+        ComputerName = $computerName
+        Status = "IP is offline"
+                                            }
+    }
+
+
+    }
+
+
+
+# Export computer status to CSV file
+#$computerStatus | Export-Csv "C:\computerStatus.csv" -NoTypeInformation
+$computerStatus | Out-GridView
+
+# Verify that the new IP addresses are reachable and create GUI table to display the current status
+$ipStatusTable = @()
+foreach ($networkSettingsRow in $networkSettingsTable) {
+    $computerName = $networkSettingsRow.ComputerName
+    $newIP = $networkSettingsRow.NewIP
+    $pingResult = Test-Connection -ComputerName $newIP -Count 1 -ErrorAction SilentlyContinue
+    if ($pingResult.Status -eq "Success") {
+        $ipStatus = "Success"
+    } else {
+        $ipStatus = "Failed"
+    }
+    $ipStatusTable += [PSCustomObject]@{
+        ComputerName = $computerName
+        NewIP = $newIP
+        Status = $ipStatus
+    }
+}
+
+$ipStatusTable | Out-GridView
